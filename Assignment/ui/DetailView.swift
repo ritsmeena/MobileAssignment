@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct DetailView: View {
+    @ObservedObject var viewModel: ContentViewModel
     let device: DeviceData
 
     var body: some View {
@@ -35,6 +36,9 @@ struct DetailView: View {
             }
 
             Spacer()
+        }
+        .onDisappear{
+          viewModel.navigateDetail = nil
         }
         .padding()
         .navigationTitle("Details")

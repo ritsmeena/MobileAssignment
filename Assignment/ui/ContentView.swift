@@ -8,36 +8,48 @@
 import SwiftUI
 
 struct ContentView: View {
-    private var viewModel = ContentViewModel()
+    @StateObject var viewModel = ContentViewModel()
     @State private var path: [DeviceData] = [] // Navigation path
-
+    @State var searchText = ""
+    
     var body: some View {
         NavigationStack(path: $path) {
             Group {
-                if let computers = viewModel.data, !computers.isEmpty {
-                    DevicesList(devices: computers) { selectedComputer in
-                        viewModel.navigateToDetail(navigateDetail: selectedComputer)
+                if viewModel.data != nil {
+                    if !viewModel.data!.isEmpty {
+                        DevicesList(searchText: $searchText, devices: viewModel.data!) { selectedComputer in
+                            searchText = ""
+                            viewModel.navigateToDetail(navigateDetail: selectedComputer)
+                        }
+                    } else {
+                        ProgressView("Loading...")
                     }
                 } else {
                     ProgressView("Loading...")
                 }
             }
             .onChange(of: viewModel.navigateDetail, {
-                let navigate = viewModel.navigateDetail
-                path.append(navigate!)
+                if let navigate = viewModel.navigateDetail {
+                    path.append(navigate)
+                }
             })
             .navigationTitle("Devices")
             .navigationDestination(for: DeviceData.self) { computer in
-                DetailView(device: computer)
+                DetailView(viewModel: viewModel, device: computer)
+                
             }
             .onAppear {
+                viewModel.fetchAPI()
                 let navigate = viewModel.navigateDetail
-                if (navigate != nil) {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        path.append(navigate!)
+                if (navigate != nil)  {
+                    if !path.contains(navigate!) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            path.append(navigate!)
+                        }
                     }
                 }
             }
         }
+        .searchable(text: $searchText, prompt: "Look for something")
     }
 }
